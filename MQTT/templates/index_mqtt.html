@@ -1,0 +1,839 @@
+{%load static%}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="{% static 'css/index_mqtt.css'%}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="{% static 'js/index_mqtt.js'%}" rel="script" defer></script>
+
+</head>
+
+<body>
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+            <div class="button_conection">
+                <button type="submit" name="connect_btn" class="connect_btn" value="connect">Conectar ao Broker</button>
+                <button type="submit" name="disconnect_btn" class="connect_btn exit" value="disconnect">Desconectar do Broker</button>
+            </div>
+            <div class="send-message-container">
+                <input type="text" class="custom-input" name="topic" placeholder="Tópico MQTT">
+                <button type="submit" class="btn_mqtt" name="subscribe_btn">Subscribe</button>
+                <input type="text" class="custom-input" name="payload" placeholder="Digite a mensagem MQTT">
+                <button type="submit" class="btn_mqtt" name="publish_btn" >Publish</button>
+            </div>
+        </form>
+
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>BROKER</th>
+                    <th>PORT</th>
+                    <th>USERNAME</th>
+                    <th>TOPIC</th>
+                    <th>CONEXÃO</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>{{ mqtt_client.broker }}</td>
+                    <td>{{ mqtt_client.port }}</td>
+                    <td>{{ mqtt_client.username }}</td>
+                    <td> <span id="subscribed_topics"></span>
+                    <td><span id="mqtt_status"></span></td>
+                </tr>
+                </tbody>
+        </table>
+        <br>
+        <div class="dropdown">
+            <button id="dropbtn" class="dropbtn">Visualizar Mensagens do Broker
+                <span id="icon" class="fa-solid fa-chevron-down fa-beat-fade"></span>
+            </button>
+        
+            <div id="dropdown-content" class="dropdown-content">
+                <div class="chat-messages">
+                    <ul id="received_messages">
+                        <li id="single_message"></li>
+                        <li class="separator"></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <div class="parametro_config" id="parametro_config">
+        <div class="parametros">
+            <div class="inside_content">
+                <div class="label_container first">
+                    <div class="title">Parâmetros</div>
+                    <div class="mid_inside">
+                        <table>
+                            <tr>
+                                <td>
+                                    <label class="text">Transdutor 0°:</label>
+                                    <input class="label_received text" id="sub_transdutor_0_min" type="text" readonly>
+                                    <label class="text">a</label>
+                                    <input class="label_received text" id="sub_transdutor_0_max" type="text" readonly>
+                                    <label class="text und">(bar)</label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="text">Offset 0°:</label>
+                                    <input class="label_received text" id="sub_offset_0" type="text" readonly>
+                                    <label class="text und">(bar)</label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label class="text">Transdutor -10°:</label>
+                                    <input class="label_received text" id="sub_transdutor_10_min" type="text" readonly>
+                                    <label class="text">a</label>
+                                    <input class="label_received text" id="sub_transdutor_10_max" type="text" readonly>
+                                    <label class="text und">(bar)</label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="text">Offset -10°:</label>
+                                    <input class="label_received text" id="sub_offset_10" type="text" readonly>
+                                    <label class="text und">(bar)</label>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="configuracao">
+            <div class="inside_content">
+                <div class="label_container first">
+                    <div class="title">Configuração</div>
+                    <div class="mid_inside onside">
+                        <div class="left">
+                            <div class="title_generic text">Condição de Início
+                            </div>
+                            <table>
+                                <tr>
+                                    <td><label class="text"> 0° ></label></td>
+                                    <td><input class="label_received text" id="sub_pressao_0_maior" type="text" readonly></td>
+                                    <td><label class="text condicao">E</label></td>
+                                    <td><label class="text"> -10° < </label>
+                                    </td>
+                                    <td><input class="label_received text" id="sub_pressao_10_menor" type="text" readonly></td>
+                                    <td> <label class="text und">(bar)</label></td>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div class="title_generic text">Condição de Parada</div>
+                            <table>
+                                <tr>
+                                    <td><label class="text"> 0° <= </label>
+                                    </td>
+                                    <td><input class="label_received text" id="sub_pressao_0_menor" type="text" readonly></td>
+                                    <td><label class="text condicao">OU</label></td>
+                                    <td><label class="text"> -10° > </label></td>
+                                    <td><input class="label_received text" id="sub_pressao_10_maior" type="text" readonly></td>
+                                    <td> <label class="text und">(bar)</label></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="right">
+                            <table>
+                                <tr>
+                                    <td><label class="text">Set Point PID:</label></td>
+                                    <td><input class="label_received text" id="sub_setpoint_pid" type="text" readonly></td>
+                                    <td><label class="text und">(bar)</label></td>
+                                </tr>
+                                <td><label class="text">Delay START:</label></td>
+                                <td><input class="label_received text" id="sub_inicio" type="text" readonly></td>
+                                <td><label class="text und">(seg)</label></td>
+                                <tr>
+                                    <td><label class="text">Delay STOP:</label></td>
+                                    <td><input class="label_received text" id="sub_parada" type="text" readonly></td>
+                                    <td><label class="text und">(seg)</label></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bloco_pid">
+            <div class="inside_content">
+                <div class="label_container first">
+                    <div class="title">Bloco P I D </div>
+                    <div class="mid_inside">
+                        <div class="pid_letters">
+                            <table>
+                                <tr>
+                                    <td><label class="text">P:</label></td>
+                                    <td><input class="label_received_large text" id="sub_proporcional" type="text" readonly></td>
+                                    <td><label class="onoff_led">
+                                            <input class="led_label" id ="sub_onoff_proporcional" type="checkbox" disabled/>
+                                            <div>
+                                                </span>
+                                                </span>
+                                            </div>
+                                            <i></i>
+                                        </label></td>
+                                </tr>
+                            </table>
+                            <table>
+                                <tr>
+                                    <td><label class="text">I:</label></td>
+                                    <td><input class="label_received_large text" id="sub_integral" type="text" readonly></td>
+                                    <td><label class="onoff_led">
+                                            <input class="led_label" type="checkbox" id="sub_onoff_integral" disabled />
+                                            <div>
+                                                </span>
+                                                </span>
+                                            </div>
+                                            <i></i>
+                                        </label></td>
+                                </tr>
+                            </table>
+                            <table>
+                                <tr>
+                                    <td><label class="text">D:</label></td>
+                                    <td><input class="label_received_large text" id="sub_derivativa" type="text" readonly></td>
+                                    <td><label class="onoff_led">
+                                            <input class="led_label" type="checkbox" id= "sub_onoff_derivativa" disabled />
+                                            <div>
+                                                </span>
+                                                </span>
+                                            </div>
+                                            <i></i>
+                                        </label></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <table>
+                            <tr>
+                                <td><label class="text">Tempo Amost.:</label></td>
+                                <td><input class="label_received text" id="sub_tempo_valor" type="text" readonly></td>
+                                <td><label class="text und">(seg)</label></td>
+                                <td><label class="onoff_led">
+                                        <input class="led_label" type="checkbox" id= "sub_onoff_tempo_automatico" disabled />
+                                        <div>
+                                            </span>
+                                            </span>
+                                        </div>
+                                        <i></i>
+                                    </label></td>
+                            </tr>
+                        </table>
+                        <div class="pid_letters">
+                            <div>
+                                <div class="title_generic text">P V</div>
+                                <table>
+                                    <tr>
+                                        <td><label class="text">De</label></td>
+                                        <td><input class="label_received text" id="sub_pv_minimo" type="text" readonly></td>
+                                        <td><label class="text">a</label></td>
+                                        <td><input class="label_received text" id="sub_pv_maximo" type="text" readonly></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div>
+                                <div class="title_generic text">M V</div>
+                                <table>
+                                    <tr>
+                                        <td><label class="text">De</label></td>
+                                        <td><input class="label_received text" id="sub_mv_minimo" type="text" readonly></td>
+                                        <td><label class="text">a</label></td>
+                                        <td><input class="label_received text" id="sub_mv_maximo" type="text" readonly></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+    <div class="status">
+        <DIV class="ASIDE">
+            <div class="inside_content">
+                <div class="label_container">
+                    <div class="title">S t a t u s</div>
+                    <div class="onside">
+                        <div class="right">
+                            <div class="title_generic text">PID/ICAD Acionada</div>
+                            <div class="center"><label class="onoff_led onoff_led_bigger">
+                                    <input class="led_label" id= "status_pid_acionada" type="checkbox" disabled/>
+                                    <div>
+                                    </div>
+                                    <i></i>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="left">
+                            <table>
+                                <tr>
+                                    <td><label class="text">Pressão 0°:</label></td>
+                                    <td><input class="label_received text" id="status_pressao_0" type="text" readonly></td>
+                                    <td><label class="text und">(bar)</label></td>
+                                </tr>
+                                <tr>
+                                    <td><label class="text">Pressão -10°:</label></td>
+                                    <td><input class="label_received text" id="status_pressao_10" type="text" readonly></td>
+                                    <td><label class="text und">(bar)</label></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="right">
+                            <div class="title_generic text">Abertura da ICM</div>
+                            <table>
+                                <tr>
+                                    <td><label class="text">Comando:</label></td>
+                                    <td><input class="label_received text" id="status_comando" type="text" readonly></td>
+                                    <td><label class="text und">%</label></td>
+                                </tr>
+                                <tr>
+                                    <td><label class="text">Retorno:</label></td>
+                                    <td><input class="label_received text" id="status_retorno" type="text" readonly></td>
+                                    <td><label class="text und">%</label></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="inside_button sidecamp">
+                            <label class="text">Underflow</label>
+                            <label class="onoff_led">
+                                <input class="led_label" id="status_underflow" type="checkbox" disabled />
+                                <div>
+                                    </span>
+                                    </span>
+                                </div>
+                                <i></i>
+                            </label>
+                            <label class="text">Overflow</label>
+                            <label class="onoff_led">
+                                <input class="led_label" id="status_overflow" type="checkbox" disabled/>
+                                <div>
+                                </div>
+                                <i></i>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="label_container error_log">
+                <div class="title title_ERROR">ERRO(s) </div>
+                <div class="mensagem_erro">
+                    <label class="text" id="status_erro">( 0 )</label></td>
+                    <div class = "mensagem_erro_descript">
+                        <label class="text" id="status_erro_message">Nenhum Erro</label>
+                    </div>
+                </div>
+            </div>
+
+        </DIV>
+    </div>
+    <DIV class="FRAME">
+        <div class="parametros_frame">
+            <fieldset class="fieldset_frame">
+                <legend>Enviar Parâmetros</legend>
+                <div class="label_container_frame resize">
+                    <div class="title_generic text">Transdutor 0°</div>
+                    <table>
+                        <tr>
+                            <td><label class="text">MÍNIMO:</label></td>
+                            <td><input class="label_received text" id="pub_transdutor_0_min" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">MÁXIMO:</label></td>
+                            <td><input class="label_received text" id="pub_transdutor_0_max" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        <tr>
+                            <td><label class="text">OFFSET:</label></td>
+                            <td><input class="label_received text" id="pub_offset_0" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        </tr>
+                    </table>
+                </div>
+                <div class="label_container_frame resize">
+                    <div class="title_generic text">Transdutor -10°</div>
+                    <table>
+                        <tr>
+                            <td><label class="text">MÍNIMO:</label></td>
+                            <td><input class="label_received text" id="pub_transdutor_10_min" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">MÁXIMO:</label></td>
+                            <td><input class="label_received text" id="pub_transdutor_10_max" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">OFFSET:</label></td>
+                            <td><input class="label_received text" id="pub_offset_10" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </fieldset>
+        </div>
+        <div class="configuracao_frame">
+            <fieldset class="fieldset_frame">
+                <legend>Enviar Configuração</legend>
+                <div class="label_container_frame">
+                    <div class="title_generic text">Inicia SE</div>
+                    <table>
+                        <tr>
+                            <td><label class="text">Pressão 0°, MAIOR que:</label></td>
+                            <td><input class="label_received text" id="pub_pressao_0_maior" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <label class="text condicao">E</label>
+                    <table>
+                        <tr>
+                            <td><label class="text">Pressão -10°, MENOR que:</label></td>
+                            <td><input class="label_received text" id="pub_pressao_10_menor" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="label_container_frame">
+                    <div class="title_generic text">Desliga SE</div>
+                    <table>
+                        <tr>
+                            <td><label class="text">Pressão 0°, MENOR que:</label></td>
+                            <td><input class="label_received text" id="pub_pressao_0_menor" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <label class="text condicao">OU</label>
+                    <table>
+                        <tr>
+                            <td><label class="text">Pressão -10°, MAIOR que:</label></td>
+                            <td><input class="label_received text" id="pub_pressao_10_maior" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="label_container_frame">
+                    <table>
+                        <tr>
+                            <td><label class="text">Set Point PID:</label></td>
+                            <td><input class="label_received text" id="pub_setpoint_pid" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="label_container_frame">
+                    <div>
+                        <table>
+                            <tr>
+                                <td><label class="text">Delay START:</label></td>
+                                <td><input class="label_received text" id="pub_inicio" type="text"></td>
+                                <td><label class="text und">(seg)</label></td>
+                                <td>
+                                    <div class="center">
+                                        <button class="button">
+                                            <div class="container">
+                                                <div class="tick">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="text">Delay STOP:</label></td>
+                                <td><input class="label_received text" id="pub_parada" type="text"></td>
+                                <td><label class="text und">(seg)</label></td>
+                                <td>
+                                    <div class="center">
+                                        <button class="button">
+                                            <div class="container">
+                                                <div class="tick">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+        <div class="pid">
+            <fieldset class="fieldset_frame">
+                <legend> Enviar P I D </legend>
+                <div class="label_container_frame">
+                    <table>
+                        <tr>
+                            <td><label class="text">Proporcional :</label></td>
+                            <td><input class="label_received text" id="pub_proporcional" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">Integral :</label></td>
+                            <td><input class="label_received text" id="pub_integral" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">Derivativa :</label></td>
+                            <td><input class="label_received text" id="pub_derivativa" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="label_container_frame">
+                    <div class="title_generic text">Habilita PID</div>
+                    <table>
+                        <tr>
+                            <td><label class="text">Proporcional :</label></td>
+                            <td>
+                                <div>
+                                    <label class="onoff_button">
+                                        <input class="button_label" id="pub_onoff_proporcional" type="checkbox" checked />
+                                        <div>
+                                            <span class="on"></span>
+                                            <span class="off"></span>
+                                        </div>
+                                        <i></i>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">Integral :</label></td>
+                            <td>
+                                <div>
+                                    <label class="onoff_button">
+                                        <input class="button_label" id="pub_onoff_integral" type="checkbox" checked />
+                                        <div>
+                                            <span class="on"></span>
+                                            <span class="off"></span>
+                                        </div>
+                                        <i></i>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">Derivativa :</label></td>
+                            <td>
+                                <div>
+                                    <label class="onoff_button">
+                                        <input class="button_label" id="pub_onoff_derivativa" type="checkbox" checked />
+                                        <div>
+                                            <span class="on"></span>
+                                            <span class="off"></span>
+                                        </div>
+                                        <i></i>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="label_container_frame">
+                    <table class="spaceright">
+                        <tr>
+                            <td><label class="text spaceright">Automática</label></td>
+                            <td>
+                                <div>
+                                    <label class="onoff_button">
+                                        <input class="button_label" id="" type="checkbox" checked />
+                                        <div>
+                                            <span class="on"></span>
+                                            <span class="off"></span>
+                                        </div>
+                                        <i></i>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label class="text">Manual:</label></td>
+                            <td><input class="label_received text" id="pub_tempo_valor" type="text"></td>
+                            <td><label class="text und">(bar)</label></td>
+                            <td>
+                                <div class="center">
+                                    <button class="button">
+                                        <div class="container">
+                                            <div class="tick">
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </fieldset>
+        </div>
+        <div class="bloco_pid_frame">
+            <fieldset class="fieldset_frame">
+                <legend>Enviar Variáveis Bloco PID</legend>
+                <div class="content">
+                    <div class="label_container_frame">
+                        <div class="title_generic text">Ajuste PV</div>
+                        <table>
+                            <tr>
+                                <td><label class="text">MÍNIMO:</label></td>
+                                <td><input class="label_received text" id="pub_pv_minimo" type="text"></td>
+                                <td><label class="text und">(bar)</label></td>
+                                <td>
+                                    <div class="center">
+                                        <button class="button">
+                                            <div class="container">
+                                                <div class="tick">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="text">MÁXIMO:</label></td>
+                                <td><input class="label_received text" id="pub_pv_maximo" type="text"></td>
+                                <td><label class="text und">(bar)</label></td>
+                                <td>
+                                    <div class="center">
+                                        <button class="button">
+                                            <div class="container">
+                                                <div class="tick">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="label_container_frame">
+                        <div class="title_generic text">Ajuste MV</div>
+                        <table>
+                            <tr>
+                                <td><label class="text">MÍNIMO:</label></td>
+                                <td><input class="label_received text" id="pub_mv_minimo" type="text"></td>
+                                <td><label class="text und">(bar)</label></td>
+                                <td>
+                                    <div class="center">
+                                        <button class="button">
+                                            <div class="container">
+                                                <div class="tick">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="text">MÁXIMO:</label></td>
+                                <td><input class="label_received text" id="pub_mv_maximo" type="text"></td>
+                                <td><label class="text und">(bar)</label></td>
+                                <td>
+                                    <div class="center">
+                                        <button class="button">
+                                            <div class="container">
+                                                <div class="tick">
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="label_container_frame func">
+                        <div>
+                            <table>
+                                <tr>
+                                    <td><label class="text">Funcionamento:</label></td>
+                                    <td><input class="label_received text" id="pub_funcionamento" type="text"></td>
+                                    <td><label class="text ">%</label></td>
+                                    <td>
+                                        <div class="center">
+                                            <button class="button">
+                                                <div class="container">
+                                                    <div class="tick">
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><label class="text">Abertura Manual:</label></td>
+                                    <td><input class="label_received text" id="pub_abertura_manual" type="text"></td>
+                                    <td><label class="text ">%</label></td>
+                                    <td>
+                                        <div class="center">
+                                            <button class="button">
+                                                <div class="container">
+                                                    <div class="tick">
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+            </fieldset>
+        </div>
+    </DIV>
+    
+    <footer></footer>
+
+</body>
+
+</html>
