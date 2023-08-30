@@ -9,6 +9,11 @@ This is a software project aimed at communicating with an MQTT broker for receiv
 - **MQTT**: A lightweight and efficient messaging protocol for communication between devices in sensor networks.
 - **Ladder Supervisory System**: A monitoring and control system that visualizes the status of devices in an industrial environment.
 - **PID Control**: A control algorithm that uses proportional, integral, and derivative terms to regulate processes in dynamic systems.
+## Preview
+
+<div align=center>
+<img src="https://i.imgur.com/bwPTSap.png">
+</div>
 
 ## Setup and Execution
 
